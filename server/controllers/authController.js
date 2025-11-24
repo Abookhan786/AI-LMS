@@ -44,12 +44,12 @@ export const login = async (req, res) => {
             return res.status(400).json({message: "Invalid email or password"});
             
         }
-        const {accessToken , refreshToken } = generatetokens;
+        const {accessToken , refreshToken } = generatetokens(user._id);
         res
-            .cookie("refresh_tokrn",refreshToken, {
+            .cookie("refresh_token",refreshToken, {
                  httpOnly: true,
-                 secure: false,
-                 sameSite: "lax",
+                 secure: true,
+                 sameSite: "strict",
         })
             .json({
                 message: "Login succesfull",
@@ -65,5 +65,29 @@ export const login = async (req, res) => {
         res.status(500).json({message: "Server error", error});
     }
 
+};
+export const refreshToken = (req, res) => {
+    try{
+        const token = req.cookie.refreshToken;
+        if(!token){
+            return res.status(401).json({message: "No refresh token"});
+
+        }
+        jwt.verify(token, process.env.JWT_REFRESH_SECRET , (err , decoded) => {
+            if(err){
+                return res.status(403).json({message : "Invalid refresh token"});
+            }
+            const {accessToken} = generatetokens(decoded.id);
+            res.json({accessToken});
+
+        });
+        
+    }
+    catch(error){
+            res.status(500).json({message : "Server error",error});
+        }
+};
+export const logout = (req , res) => {
+    res.clearCookie("refresh_token").json({message : "Logout successfully"});
 };
 
